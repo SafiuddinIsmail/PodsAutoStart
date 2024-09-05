@@ -1,0 +1,46 @@
+# This playbook installs Podman, creates a pod, and runs a Python script inside a container.
+
+- name: Podman Automation Playbook
+  hosts: all
+  become: yes  # Escalates privileges to root using sudo
+
+  tasks:
+
+    - name: Install Podman
+      yum:
+        name: podman
+        state: present
+
+    - name: Create a directory for the Python script
+      file:
+        path: /opt/my_python_app
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Copy the Python script to the container directory
+      copy:
+        src: /path/to/your/python_script.py  # Replace with actual path to the Python script
+        dest: /opt/my_python_app/python_script.py
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Build a Podman image from Dockerfile
+      command: >
+        podman build -t my_python_app_image /opt/my_python_app/
+
+    - name: Create a pod for the Python app
+      command: >
+        podman pod create --name my_python_pod --publish 5000:5000
+
+    - name: Run a container inside the pod to execute the Python script
+      command: >
+        podman run -d --pod my_python_pod --name my_python_container my_python_app_image python3 /app/python_script.py
+
+    - name: Ensure the Podman service is enabled and running
+      service:
+        name: podman
+        state: started
+        enabled: yes
